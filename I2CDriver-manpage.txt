@@ -1,0 +1,160 @@
+
+I2CKernelModule(4)         Kernel Interfaces Manual         I2CKernelModule(4)
+
+
+
+NNAAMMEE
+       I2CKernelModule  - Interfaces the I2C hardware with userspace through a
+       file device. The module is made for the MPU60x0 line of IMUs.
+
+
+SSYYNNOOPPSSIISS
+       echo _C_O_M_M_A_N_D > dev/I2CDriver
+       cat /dev/I2CDriver
+
+
+DDEESSCCRRIIPPTTIIOONN
+       I2CKernelModule is a device driver for  interfacing  with  the  MPU60x0
+       series IMUs. The driver can be used with any system that features dedi-
+       cated I2C hardware, like the Raspberry PI and  in  general  most  SOCs.
+       Upon  load  the  driver  automatically  enables the first I2C interface
+       hardware, I2C-1 / I2C-arm, that is present on most SOCs and  makes  the
+       appropriate  configurations. Different SOCs use different physical con-
+       nections to the hardware, it is, therefore, necessary  to  consult  the
+       SOC's datasheet for correct wiring of the IMU.
+
+       The driver simplifies interfacing with the IMUs by making itself avail-
+       able as a file device in the /dev folder. The file device ensures  that
+       userspace  programs  have  access to the kernels' I2C sub-system. Users
+       may read from or write to the file device either  through  simple  com-
+       mand-line  tools,  like  "echo"  and "cat", or may open the device as a
+       file in a separate program.  Furthermore, the driver simplifies  inter-
+       facing  with  the  IMUs  by defining a set of commands that either read
+       from or write to specific registers on the IMU.  The driver may be com-
+       piled  with  the  kernel or inserted at run time. For systems utilizing
+       the device tree structure, a device tree overlay is  specifically  cre-
+       ated  for the driver. This will handle the setup of I2C and load of the
+       module on boot.
+
+
+EEXXAAMMPPLLEE
+       _e_c_h_o _T_E_M_P_H _> _/_d_e_v_/_I_2_C_D_r_i_v_e_r
+              The driver transmits the address of the  temperature  high  byte
+              register.
+       _c_a_t _/_d_e_v_/_I_2_C_D_r_i_v_e_r
+              The  driver  transmits  a  read  command to the I2C device.  The
+              device will transmit back the value  stored  in  the  previously
+              pointed register.
+
+
+CCOONNFFIIGG
+       The driver configures the I2C-1 / I2C-arm interface for standard 100kHz
+       bus frequency and setup the interface for communication with  the  I2C-
+       slave  address  0x68.  The  Raspberry PI connects the I2C-1 hardware to
+       GPIO pins 3 and 5.
+       To  enable  the  I2C   hardware   and   the   "dtparam=i2c_arm=on"   or
+       "dtparam=i2c1=on"  should  be  set  in the "/boot/config.txt" file.  If
+       autoloading with device-tree is needed, the previous parameter does not
+       need to be set. Instead, see section: AAUUTTOOLLOOAADD
+
+
+CCOOMMMMAANNDDSS
+       Supported commands used when writing to and reading from the IMU.
+
+              ggeettIIDD - returns the IMUs' id
+
+              TTEEMMPPHH  -  returns the high byte of the temperature sensors' mea-
+              surement
+
+              TTEEMMPPLL - returns the low byte of the  temperature  sensors'  mea-
+              surement
+
+              AACCCCXXHH - Returns the high byte of the accelerometer's X-axis mea-
+              surement
+
+              AACCCCXXLL -Returns the low byte of the accelerometer's  X-axis  mea-
+              surement
+
+              AACCCCYYHH - Returns the high byte of the accelerometer's Y-axis mea-
+              surement
+
+              AACCCCYYLL - Returns the low byte of the accelerometer's Y-axis  mea-
+              surement
+
+              AACCCCZZHH - Returns the high byte of the accelerometer's Z-axis mea-
+              surement
+
+              AACCCCZZLL - Returns the low byte of the accelerometer's Z-axis  mea-
+              surement
+
+              GGYYRRXXHH  - Returns the high byte of the gyroscope's angular veloc-
+              ity around the X-axis
+
+              GGYYRRXXLL - Returns the low byte of the gyroscope's angular velocity
+              around the X-axis
+
+              GGYYRRYYHH  - Returns the high byte of the gyroscope's angular veloc-
+              ity around the Y-axis
+
+              GGYYRRYYLL - Returns the low byte of the gyroscope's angular velocity
+              around the Y-axis
+
+              GGYYRRZZHH  - Returns the high byte of the gyroscope's angular veloc-
+              ity around the Z-axis
+
+              GGYYRRZZLL - Returns the low byte of the gyroscope's angular velocity
+              around the Z-axis
+
+       Each command takes arguments in the form of decimal values. When speci-
+       fying an argument with a command, the argument is  transmitted  to  the
+       I2C-slave  device  with an I2C write command. The I2C-slave device then
+       overwrites the content of the respective register with the argument.
+       Useful for resetting a measurement.
+
+
+OOPPTTIIOONNSS
+       --aa,, ----aaddddrreessss XXXX
+       Specify alternative I2C-slave address. replace XX with the address.
+       The option is useful for I2C-slave devices with different addresses.
+
+       --ff,, ----ffrreeqq 110000 // 440000
+       Changes the frequency of the I2C hardware.  100  for  100kHz,  400  for
+       400kHz.
+       The  default transfer frequency is 100kHz. If the I2C-slave device sup-
+       ports fast data transfer, set the argument to  400,  for  400kHz  high-
+       speed data transfer.
+
+
+AAUUTTOO--LLOOAADD
+       The  driver  may  be  loaded with the command "insmod Kernelmodule.ko".
+       This inserts the module into the running kernel. To unload  the  module
+       the command "rmmod Kernelmodule" can be used.
+
+       Using the device-tree overlay "I2CDriver.dtbo" the device driver can be
+       autoloaded upon boot of the kernel.  To do this copy the overlay to the
+       "/boot/overlays"  directory  and add  "dtoverlay=I2CDriver" to the con-
+       fig.txt file.  Autoloading with device-tree is dependent on modprobe.
+
+       Initializing modprobe. The module is placed in the  "/lib/modules/{ker-
+       nel version}/drivers/" and the command "depmod -a" is issued.  The mod-
+       ule can now be inserter by calling "modprobe {name}".  The  module  may
+       be unloaded with the command "modprobe -r {name}".
+
+
+BBUUGGSS
+       Known  bugs.  Unloading the module from the kernel using rmmod does not
+       seem to work as the module cannot be  loaded  again  using  insmod.   A
+       reboot is needed.
+
+
+AAUUTTHHOORR
+       This program is solely written and maintained by the author:
+              Kenneth Rungstroem Larsen.
+
+       Contact:
+              rungstroem@gmail.com
+       for more information or bug reports.
+
+
+
+version 0.01 alpha                LEO 2 2021                I2CKernelModule(4)
